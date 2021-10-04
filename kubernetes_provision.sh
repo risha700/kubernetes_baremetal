@@ -165,7 +165,8 @@ log_message "download cri"
 sudo apt-get update > /dev/null 2>&1
 log_message "system update"
 
-sudo apt-get install -y cri-o-1.16 cri-o-runc
+sudo apt-get install -y jq cri-o-runc
+curl https://raw.githubusercontent.com/cri-o/cri-o/main/scripts/get | bash > /dev/null 2>&1
 log_message "Install cri-o and cri-o-runc"
 
 sudo systemctl daemon-reload > /dev/null 2>&1
