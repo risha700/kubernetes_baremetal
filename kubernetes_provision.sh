@@ -265,7 +265,11 @@ init
 
 echo -e " \e[44m  ALL GOOD \e[0m
   TO initialize a cluster plane NOW RUN:\n
-    \e[38;5;44m $ sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all --v=5 --cri-socket /var/run/dockershim.sock \e[0m \n
+    \e[38;5;44m 
+    $ sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all --v=5 --cri-socket /var/run/dockershim.sock \
+    --apiserver-advertise-address=master-machine-ip
+    
+    \e[0m \n
   THEN INSTALL NETWROKING FLANNEL --pod-network-cidr=10.244.0.0/16 :\n
     \e[38;5;44m  $ sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \e[0m  \n
   OR CALICO:\n
