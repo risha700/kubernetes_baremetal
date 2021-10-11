@@ -265,11 +265,17 @@ init
 
 echo -e " \e[44m  ALL GOOD \e[0m
   TO initialize a cluster plane NOW RUN:\n
-    \e[38;5;44m $ sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=all --v=5 --cri-socket /var/run/dockershim.sock \e[0m \n
-  THEN INSTALL NETWROKING FLANNEL:\n
+    \e[38;5;44m $ sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all --v=5 --cri-socket /var/run/dockershim.sock \e[0m \n
+  THEN INSTALL NETWROKING FLANNEL --pod-network-cidr=10.244.0.0/16 :\n
     \e[38;5;44m  $ sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \e[0m  \n
   OR CALICO:\n
-    \e[38;5;44m  $ sudo kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml \e[0m  \n
+    \e[38;5;44m  
+    # one liner
+    $ sudo kubectl apply -f https://docs.projectcalico.org/v3.14/manifests/calico.yaml   \n
+    # or docs version
+    $ sudo kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml \n
+    $ sudo kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml \n
+    \e[0m
   IF YOU WANT TO JOIN YOUR WORKER NODES:\n
    \e[38;5;44m  $ kubeadm join --discovery-token .... --discovery-token-ca-cert-hash ... \e[0m 
 "
