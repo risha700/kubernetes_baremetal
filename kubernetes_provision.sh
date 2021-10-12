@@ -2,7 +2,7 @@
 set -e
 
 master_node_ports=('6443/tcp' '2379:2380/tcp' '10250/tcp' '10251/tcp' '10252/tcp' '10255/tcp' 'ssh')
-worker_node_ports=('10251/tcp' '10255/tcp' 'ssh')
+worker_node_ports=('10250/tcp' '10251/tcp' '10255/tcp' 'ssh')
 
 log_message(){
   if [ $? -eq 0 ]
@@ -115,7 +115,7 @@ log_message "enable containerd"
 #         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]\
 #           SystemdCgroup = true
 # }' /etc/containerd/config.toml
-sed  's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/&\n\t   systemd_cgroup=true/' /etc/containerd/config.toml
+sed  's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/&\n\t    systemd_cgroup=true/' /etc/containerd/config.toml
 # sudo nano /etc/containerd/config.toml
 log_message '
 Add the systemd cgroup driver in /etc/containerd/config.toml with runc
