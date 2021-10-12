@@ -115,8 +115,7 @@ log_message "enable containerd"
 #         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]\
 #           SystemdCgroup = true
 # }' /etc/containerd/config.toml
-sed -i  's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]\n           systemd_cgroup=true/' /etc/containerd/config.toml
-
+sed  's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/&\n\t   systemd_cgroup=true/' /etc/containerd/config.toml
 # sudo nano /etc/containerd/config.toml
 log_message '
 Add the systemd cgroup driver in /etc/containerd/config.toml with runc
