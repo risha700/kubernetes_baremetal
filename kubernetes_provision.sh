@@ -110,12 +110,12 @@ log_message "enable containerd"
 # ADDED CGROUPS TO /etc/containerd/config.toml
 ## To use the systemd cgroup driver in /etc/containerd/config.toml with runc, set
 
-sed -i'' -e '/containerd.runtimes.runc\]/{
-N;N;N;N;a\
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]\
-          SystemdCgroup = true
-}' /etc/containerd/config.toml
-
+# sed -i'' -e '/containerd.runtimes.runc\]/{
+# N;N;N;N;a\
+#         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]\
+#           SystemdCgroup = true
+# }' /etc/containerd/config.toml
+sed -i  's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]\n           systemd_cgroup=true/' /etc/containerd/config.toml
 
 # sudo nano /etc/containerd/config.toml
 log_message '
