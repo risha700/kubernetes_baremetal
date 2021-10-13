@@ -62,131 +62,82 @@ install_node_options(){
 
 setup_docker_systemd(){
 
+
+# #=========================> prepare docker
+log_message "|=============installing packages================|"
+sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2 ufw -y > /dev/null 2>&1
+log_message "Install ca-certificates curl software-properties-common gnupg2 ufw"
+# # # Add docker
+# # curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key --keyring /etc/apt/trusted.gpg.d/docker.gpg add - > /dev/null 2>&1
+# # sudo add-apt-repository \
+# #     "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+# #     $(lsb_release -cs) \
+# #     stable" -y > /dev/null 2>&1
+
+# # log_message "Install docker"
+# install containerd 
+#=========================> prepare containerd
+log_message "|=============preparing containerd environment=================|"
 cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf > /dev/null 2>&1
 overlay
 br_netfilter
 EOF
-log_message "containerd config add"
-
-
+log_message "containerd config added to /etc/modules-load.d/containerd.conf"
 sudo modprobe overlay > /dev/null 2>&1
 sudo modprobe br_netfilter > /dev/null 2>&1
-log_message "containerd config apply"
+log_message "containerd config applied modprobe"
 
 cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf > /dev/null 2>&1
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 EOF
+log_message "containerd params persist config in /etc/sysctl.d/99-kubernetes-cri.conf"
 
-log_message "CRI conf add"
-# refresh system without boot
-sudo sysctl --system > /dev/null 2>&1
-log_message "system reset"
-# install supportive packages
-sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2 -y > /dev/null 2>&1
-log_message "Install ca-certificates curl software-properties-common gnupg2"
-# # Add docker
-# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key --keyring /etc/apt/trusted.gpg.d/docker.gpg add - > /dev/null 2>&1
-# sudo add-apt-repository \
-#     "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-#     $(lsb_release -cs) \
-#     stable" -y > /dev/null 2>&1
-
-# log_message "Install docker"
-# install containerd 
 sudo apt update && sudo apt install containerd -y > /dev/null 2>&1
 log_message "install containerd.io"
 
 sudo mkdir -p /etc/containerd > /dev/null 2>&1
 sudo containerd config default > /etc/containerd/config.toml
 log_message "containered config copied to /etc/containerd/config.toml"
+sed -i -e 's/SystemdCgroup.*/SystemdCgroup=true/' /etc/containerd/config.toml
+log_message ' changed SystemdCgroup = true to  /etc/containerd/config.toml with runc'
 
 sudo systemctl restart containerd > /dev/null 2>&1
 log_message "restart containerd"
 
 sudo systemctl enable containerd > /dev/null 2>&1
 log_message "enable containerd"
-# ADDED CGROUPS TO /etc/containerd/config.toml
-## To use the systemd cgroup driver in /etc/containerd/config.toml with runc, set
-
-# sed -i'' -e '/containerd.runtimes.runc\]/{
-# N;N;N;N;a\
-#         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]\
-#           SystemdCgroup = true
-# }' /etc/containerd/config.toml
-# sed  -i 's/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]/&\n\t    systemd_cgroup=true/' /etc/containerd/config.toml
-sed -i -e 's/SystemdCgroup.*/SystemdCgroup=true/' /etc/containerd/config.toml
-# sudo nano /etc/containerd/config.toml
-log_message '
-Add the systemd cgroup driver in /etc/containerd/config.toml with runc
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-  ...
-  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-    SystemdCgroup = true
-'
-
-sudo modprobe overlay > /dev/null 2>&1
-sudo modprobe br_netfilter > /dev/null 2>&1
-log_message "containerd config reapply"
-
-cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf > /dev/null 2>&1
-net.bridge.bridge-nf-call-iptables  = 1
-net.ipv4.ip_forward                 = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-EOF
-log_message "Add CRI cof to /etc/sysctl.d/99-kubernetes-cri.conf"
 
 sudo sysctl --system > /dev/null 2>&1
 log_message "system reset"
 
 #cri version
 VERSION=1.22
-OS=xUbuntu_20.10
+OS=Debian_11
 
 cat <<EOF | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list > /dev/null 2>&1
 deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/ /
 EOF
 log_message "add kubectl to apt repo"
-
-cat <<EOF | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:$VERSION.list > /dev/null 2>&1
-deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$VERSION/$OS/ /
-EOF
-log_message "add cri to apt repo"
-
+log_message "downloading kube"
 curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$OS/Release.key | sudo apt-key --keyring /etc/apt/trusted.gpg.d/libcontainers.gpg add - > /dev/null 2>&1
-log_message "download kube"
+log_message "kube download"
 
 wait $!
-
-curl -L https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:$VERSION/$OS/Release.key | sudo apt-key --keyring /etc/apt/trusted.gpg.d/libcontainers-cri-o.gpg add - > /dev/null 2>&1
-log_message "download cri"
-
-sudo apt update > /dev/null 2>&1
-log_message "system update"
-
-sudo apt install -y jq cri-o-runc
-curl https://raw.githubusercontent.com/cri-o/cri-o/main/scripts/get | bash > /dev/null 2>&1
-log_message "Install cri-o and cri-o-runc"
-
+log_message "upgrading packages..."
+sudo apt update && sudo apt upgrade -y > /dev/null 2>&1
+log_message "system updated"
 sudo systemctl daemon-reload > /dev/null 2>&1
 log_message "system daemon reload"
 
-sudo systemctl start crio > /dev/null 2>&1
-log_message "start crio"
-
-sudo systemctl enable crio > /dev/null 2>&1
-log_message "enable crio"
-
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key --keyring /etc/apt/trusted.gpg.d/docker.gpg add - > /dev/null 2>&1
-log_message "adding docker apt keys"
+log_message "added docker apt keys"
 sudo add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) \
-  stable" -y > /dev/null 2>&1
+  "deb [arch=amd64] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" -y > /dev/null 2>&1
 
 log_message "downloading docker..."
-
 sudo apt update && sudo apt install docker-ce docker-ce-cli -y > /dev/null 2>&1
 log_message "install docker-ce docker-ce-cli"
 
@@ -221,8 +172,10 @@ log_message "docker enable"
 }
 
 setup_kubernetes(){
-sudo apt update > /dev/null 2>&1
-log_message "System update"
+log_message "|=============preparing kubernetes environment=================|"
+
+sudo apt update && sudo apt upgrade -y > /dev/null 2>&1
+log_message "System updated"
 
 sudo swapoff --all
 log_message "Swap off"
@@ -233,17 +186,31 @@ log_message "Swap off persisted"
 sudo hostnamectl set-hostname $NODE_MODE
 log_message "set hostname $NODE_MODE"
 
-# INSTALL KUBERNETES
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add > /dev/null 2>&1
-log_message "add kubernetes apt key"
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
 
-sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main" -y > /dev/null 2>&1
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+log_message "iptables set bridge traffic"
+
+
+# INSTALL KUBERNETES
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+# curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add > /dev/null 2>&1
+log_message "add kubernetes apt key"
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+# sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main" -y > /dev/null 2>&1
 log_message "add kubernetes repo"
 
 sudo apt install kubeadm kubelet kubectl -y > /dev/null 2>&1
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
 log_message "download kubeadm kubelet kubectl"
-
-sudo apt-mark hold kubeadm kubelet kubectl > /dev/null 2>&1
+sudo apt-mark hold kubelet kubeadm kubectl
 log_message "hold updates kubeadm kubelet kubectl"
 
 }
@@ -266,11 +233,14 @@ init
 echo -e " \e[44m  ALL GOOD \e[0m
   TO initialize a cluster plane NOW RUN:\n
     \e[38;5;44m 
+    # keep on mind 
+    CALICO --pod-network-cidr=192.168.0.0/16
+    FLANNEL --pod-network-cidr=10.244.0.0/16
     $ sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=all --v=5 --cri-socket /var/run/dockershim.sock \
     --apiserver-advertise-address=master-machine-ip
     
     \e[0m \n
-  THEN INSTALL NETWROKING FLANNEL --pod-network-cidr=10.244.0.0/16 :\n
+  THEN INSTALL NETWROKING FLANNEL :\n
     \e[38;5;44m  $ sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml \e[0m  \n
   OR CALICO:\n
     \e[38;5;44m  
